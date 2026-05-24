@@ -1,4 +1,4 @@
-name: dashakh Build Windows Only
+name: Primitive Build Windows Only
 
 on:
   workflow_dispatch:      # دستی اجرا شود
