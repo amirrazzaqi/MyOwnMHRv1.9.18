@@ -28,22 +28,17 @@ jobs:
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
         with:
-          targets: |
-            aarch64-linux-android
-            armv7-linux-androideabi
-            x86_64-linux-android
-            # i686-linux-android را حذف کردیم
+          targets: aarch64-linux-android,armv7-linux-androideabi,x86_64-linux-android
 
       - name: Install cargo-ndk
         run: cargo install cargo-ndk
 
-      # === Build فقط معماری‌های مهم ===
+      # === Build Rust Libraries ===
       - name: Build Rust for Android
         run: |
           cargo ndk -t arm64-v8a   --platform 24 build --release
           cargo ndk -t armeabi-v7a --platform 24 build --release
           cargo ndk -t x86_64      --platform 24 build --release
-          # x86 را حذف کردیم
 
       # === Build APK ===
       - name: Build APK
