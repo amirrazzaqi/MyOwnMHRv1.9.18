@@ -26,7 +26,7 @@ android {
         // APK that Just Works rather than "pick the right ABI" which nobody
         // does correctly. Google Play would auto-split; we ship universal.
         ndk {
-            abiFilters += listOf("arm64-v8a", "armeabi-v7a", "x86_64", "x86")
+            abiFilters += listOf("arm64-v8a", "armeabi-v7a", "x86_64") //, "x86")
         }
     }
 
@@ -83,7 +83,7 @@ android {
         abi {
             isEnable = true
             reset()
-            include("arm64-v8a", "armeabi-v7a", "x86_64", "x86")
+            include("arm64-v8a", "armeabi-v7a", "x86_64") //, "x86")
             isUniversalApk = true
         }
     }
@@ -182,7 +182,7 @@ fun normalizeTun2proxySo() {
 // above; if these drift, the APK either includes .so files with no matching
 // ABI entry (dead weight) or advertises ABIs with no .so (runtime
 // UnsatisfiedLinkError on devices that pick that split).
-val androidAbis = listOf("arm64-v8a", "armeabi-v7a", "x86_64", "x86")
+val androidAbis = listOf("arm64-v8a", "armeabi-v7a", "x86_64") //, "x86")
 
 tasks.register<Exec>("cargoBuildDebug") {
     group = "build"
