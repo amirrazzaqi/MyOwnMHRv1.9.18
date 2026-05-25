@@ -1,4 +1,4 @@
-name: My Android APK
+name: My Build APK
 
 on:
   workflow_dispatch:
@@ -28,27 +28,29 @@ jobs:
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
         with:
-          targets: aarch64-linux-android, armv7-linux-androideabi, x86_64-linux-android
+          targets: |
+            aarch64-linux-android
+            armv7-linux-androideabi
+            x86_64-linux-android
+            # i686-linux-android را حذف کردیم
 
       - name: Install cargo-ndk
         run: cargo install cargo-ndk
 
-      # === Build Rust Library ===
-      - name: Build Rust for Android (arm64-v8a)
-        run: cargo ndk -t arm64-v8a --platform 24 build --release
-
-      - name: Build Rust for Android (armeabi-v7a)
-        run: cargo ndk -t armeabi-v7a --platform 24 build --release
-
-      - name: Build Rust for Android (x86_64)
-        run: cargo ndk -t x86_64 --platform 24 build --release
+      # === Build فقط معماری‌های مهم ===
+      - name: Build Rust for Android
+        run: |
+          cargo ndk -t arm64-v8a   --platform 24 build --release
+          cargo ndk -t armeabi-v7a --platform 24 build --release
+          cargo ndk -t x86_64      --platform 24 build --release
+          # x86 را حذف کردیم
 
       # === Build APK ===
       - name: Build APK
         working-directory: ./android
         run: |
           chmod +x ./gradlew
-          ./gradlew assembleRelease --no-daemon
+          ./gradlew assembleRelease --no-daemon --stacktrace
           ./gradlew assembleDebug --no-daemon
 
       # === Prepare APKs ===
