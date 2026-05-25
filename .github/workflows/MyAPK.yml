@@ -33,14 +33,12 @@ jobs:
       - name: Install cargo-ndk
         run: cargo install cargo-ndk
 
-      # === Build Rust Libraries ===
       - name: Build Rust for Android
         run: |
           cargo ndk -t arm64-v8a   --platform 24 build --release
           cargo ndk -t armeabi-v7a --platform 24 build --release
           cargo ndk -t x86_64      --platform 24 build --release
 
-      # === Build APK ===
       - name: Build APK
         working-directory: ./android
         run: |
@@ -48,12 +46,23 @@ jobs:
           ./gradlew assembleRelease --no-daemon --stacktrace
           ./gradlew assembleDebug --no-daemon
 
-      # === Prepare APKs ===
+      # === پیدا کردن و کپی APKها (مسیر واقعی پروژه شما) ===
       - name: Prepare APKs
         run: |
           mkdir -p apks
-          cp android/app/build/outputs/apk/release/app-release.apk apks/mhrv-rs-${{ github.ref_name || 'latest' }}-release.apk
-          cp android/app/build/outputs/apk/debug/app-debug.apk     apks/mhrv-rs-${{ github.ref_name || 'latest' }}-debug.apk
+          
+          # Release APK
+          if [ -f android/app/build/outputs/apk/release/app-release.apk ]; then
+            cp android/app/build/outputs/apk/release/app-release.apk apks/mhrv-rs-${{ github.ref_name || 'latest' }}-release.apk
+          else
+            echo "Release APK not found at standard path"
+            ls -la android/app/build/outputs/apk/release/ || true
+          fi
+
+          # Debug APK
+          if [ -f android/app/build/outputs/apk/debug/app-debug.apk ]; then
+            cp android/app/build/outputs/apk/debug/app-debug.apk apks/mhrv-rs-${{ github.ref_name || 'latest' }}-debug.apk
+          fi
 
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
