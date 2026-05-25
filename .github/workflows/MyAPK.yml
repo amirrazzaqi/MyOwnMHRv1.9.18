@@ -46,23 +46,24 @@ jobs:
           ./gradlew assembleRelease --no-daemon --stacktrace
           ./gradlew assembleDebug --no-daemon
 
-      # === پیدا کردن و کپی APKها (مسیر واقعی پروژه شما) ===
+      # === کپی تمام APKهای ساخته شده ===
       - name: Prepare APKs
         run: |
           mkdir -p apks
           
-          # Release APK
-          if [ -f android/app/build/outputs/apk/release/app-release.apk ]; then
-            cp android/app/build/outputs/apk/release/app-release.apk apks/mhrv-rs-${{ github.ref_name || 'latest' }}-release.apk
-          else
-            echo "Release APK not found at standard path"
-            ls -la android/app/build/outputs/apk/release/ || true
-          fi
-
-          # Debug APK
-          if [ -f android/app/build/outputs/apk/debug/app-debug.apk ]; then
-            cp android/app/build/outputs/apk/debug/app-debug.apk apks/mhrv-rs-${{ github.ref_name || 'latest' }}-debug.apk
-          fi
+          echo "=== Release APKs ==="
+          ls -la android/app/build/outputs/apk/release/
+          
+          # کپی Universal (بهترین گزینه برای اکثر کاربران)
+          cp android/app/build/outputs/apk/release/app-universal-release.apk apks/mhrv-rs-${{ github.ref_name || 'latest' }}-universal-release.apk 2>/dev/null || echo "Universal APK not found"
+          
+          # کپی بقیه ABIها (اختیاری)
+          cp android/app/build/outputs/apk/release/app-arm64-v8a-release.apk apks/mhrv-rs-${{ github.ref_name || 'latest' }}-arm64-release.apk 2>/dev/null || true
+          cp android/app/build/outputs/apk/release/app-x86_64-release.apk apks/mhrv-rs-${{ github.ref_name || 'latest' }}-x86_64-release.apk 2>/dev/null || true
+          
+          echo "=== Debug APKs ==="
+          ls -la android/app/build/outputs/apk/debug/ || true
+          cp android/app/build/outputs/apk/debug/app-debug.apk apks/mhrv-rs-${{ github.ref_name || 'latest' }}-debug.apk 2>/dev/null || true
 
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
