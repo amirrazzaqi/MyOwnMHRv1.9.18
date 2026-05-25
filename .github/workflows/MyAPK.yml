@@ -1,0 +1,95 @@
+name: My APK
+
+on:
+  workflow_dispatch:  # اجرا دستی
+  push:
+    tags:
+      - 'v*.*.*'       # وقتی تگ زدید (مثل v1.9.18) اتوماتیک اجرا شود
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-android:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      # === Java & Android SDK ===
+      - name: Setup JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          cmdline-tools-version: 11076708
+
+      # === Rust & cargo-ndk ===
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: |
+            aarch64-linux-android
+            armv7-linux-androideabi
+            x86_64-linux-android
+
+      - name: Install cargo-ndk
+        run: cargo install cargo-ndk
+
+      # === Build Rust Library for Android ===
+      - name: Build Rust CDylib for Android
+        run: |
+          cargo ndk \
+            -t arm64-v8a \
+            -t armeabi-v7a \
+            -t x86_64 \
+            --android-platform 24 \
+            build --release
+
+      # === Build APK ===
+      - name: Make gradlew executable
+        run: chmod +x ./android/gradlew
+
+      - name: Build Release APK
+        working-directory: ./android
+        run: ./gradlew assembleRelease --no-daemon --stacktrace
+
+      - name: Build Debug APK (برای تست)
+        working-directory: ./android
+        run: ./gradlew assembleDebug --no-daemon
+
+      # === Rename and organize APKs ===
+      - name: Prepare APKs
+        run: |
+          mkdir -p apks
+          cp android/app/build/outputs/apk/release/app-release.apk apks/mhrv-rs-v1.9.18-android-universal-release.apk
+          cp android/app/build/outputs/apk/debug/app-debug.apk     apks/mhrv-rs-v1.9.18-android-universal-debug.apk
+
+      # === آپلود به عنوان Artifact ===
+      - name: Upload APK as Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: mhrv-rs-android-apks
+          path: apks/
+          retention-days: 30
+
+      # === اضافه کردن به Release (فقط وقتی تگ زدیم) ===
+      - name: Release APKs
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/v')
+        with:
+          files: |
+            apks/mhrv-rs-*-release.apk
+          tag_name: ${{ github.ref_name }}
+          name: Release ${{ github.ref_name }}
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
