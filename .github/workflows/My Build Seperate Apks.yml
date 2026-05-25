@@ -1,0 +1,96 @@
+name: My Build Separate Android APK
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  build-android:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android,armv7-linux-androideabi,x86_64-linux-android
+
+      - name: Install cargo-ndk
+        run: cargo install cargo-ndk
+
+      - name: Build Rust for Android
+        run: |
+          cargo ndk -t arm64-v8a   --platform 24 build --release
+          cargo ndk -t armeabi-v7a --platform 24 build --release
+          cargo ndk -t x86_64      --platform 24 build --release
+
+      - name: Build All APKs
+        working-directory: ./android
+        run: |
+          chmod +x ./gradlew
+          ./gradlew assembleRelease --no-daemon
+          ./gradlew assembleDebug --no-daemon
+
+      - name: Prepare APKs with Clear Names
+        run: |
+          mkdir -p apks
+          VERSION=${{ github.ref_name || 'latest' }}
+          
+          echo "📦 Copying APKs..."
+          
+          # Universal
+          cp android/app/build/outputs/apk/release/app-universal-release.apk     apks/mhrv-rs-${VERSION}-universal-release.apk
+          
+          # Architecture Specific
+          cp android/app/build/outputs/apk/release/app-arm64-v8a-release.apk    apks/mhrv-rs-${VERSION}-arm64-v8a-release.apk
+          cp android/app/build/outputs/apk/release/app-x86_64-release.apk       apks/mhrv-rs-${VERSION}-x86_64-release.apk
+          cp android/app/build/outputs/apk/release/app-armeabi-v7a-release.apk  apks/mhrv-rs-${VERSION}-armeabi-v7a-release.apk
+          
+          # Debug versions
+          cp android/app/build/outputs/apk/debug/app-universal-debug.apk        apks/mhrv-rs-${VERSION}-universal-debug.apk
+
+          ls -lh apks/
+
+      - name: Upload Artifacts (برای دانلود دستی)
+        uses: actions/upload-artifact@v4
+        with:
+          name: mhrv-rs-apks
+          path: apks/
+          retention-days: 30
+
+      # ==================== RELEASE ====================
+      - name: Publish to GitHub Releases
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/v')
+        with:
+          files: apks/*.apk
+          tag_name: ${{ github.ref_name }}
+          name: Release ${{ github.ref_name }}
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+          body: |
+            ✅ Android APKs built successfully
+            
+            **Files:**
+            - `mhrv-rs-*-universal-release.apk` → توصیه شده (همه معماری‌ها)
+            - `mhrv-rs-*-arm64-v8a-release.apk` → گوشی‌های جدید (سبک‌ترین)
+            - `mhrv-rs-*-x86_64-release.apk`
+            - `mhrv-rs-*-armeabi-v7a-release.apk`
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
