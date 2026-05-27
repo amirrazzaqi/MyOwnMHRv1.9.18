@@ -1,4 +1,4 @@
-name: My Build Release APKs
+name: My Build ReleaseONLY APKs
 
 on:
   workflow_dispatch:     # فقط دستی اجرا شود
