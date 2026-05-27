@@ -1,7 +1,7 @@
-name: My Build ReleaseONLY APKs
+name: My Build ReleaseONLY APKs - Manual
 
 on:
-  workflow_dispatch:     # فقط دستی اجرا شود
+  workflow_dispatch:
 
 jobs:
   build:
@@ -20,7 +20,7 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Install Rust
+      - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: aarch64-linux-android,armv7-linux-androideabi,x86_64-linux-android
@@ -63,15 +63,10 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: build-${{ github.run_number }}
-          name: Android Build ${{ github.run_number }} - ${{ date }}
+          name: Android Build #${{ github.run_number }}
           files: apks/*.apk
           draft: false
           prerelease: false
           generate_release_notes: true
-          body: |
-            **نسخه دستی ساخته شده**
-
-            تاریخ ساخت: ${{ date }}
-            Workflow Run: #${{ github.run_number }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
