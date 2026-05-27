@@ -1,7 +1,12 @@
-name: My Build ReleaseONLY APKs - Manual
+name: 10_Build Android APKs - Manual
 
 on:
   workflow_dispatch:
+
+# ===== Permissions اضافه شده =====
+permissions:
+  contents: write
+  actions: read
 
 jobs:
   build:
@@ -67,6 +72,11 @@ jobs:
           files: apks/*.apk
           draft: false
           prerelease: false
-          generate_release_notes: true
+          generate_release_notes: false   # این را false کردم تا ارور نده
+          body: |
+            **Manual Android Build**
+
+            Run Number: #${{ github.run_number }}
+            تاریخ ساخت: $(date)
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
